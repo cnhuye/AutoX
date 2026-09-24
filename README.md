@@ -1,4 +1,4 @@
-# Autox.js v7
+# AutoX.js v7
 <p align="center"> 
   
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/aiselp/AutoX/total)
@@ -9,132 +9,130 @@
 
 </p>
 
-[English Document](README_en.md)
+[中文文档](README_zh.md)
 
-## 简介
+## Introduction
 
-一个支持无障碍服务的Android平台上的JavaScript 运行环境 和 开发环境，其发展目标是类似JsBox和Workflow。
+A JavaScript runtime and development environment for Android built on top of the Accessibility Service. Its goal is to be something like JsBox or Workflow.
 
-本项目从[hyb1996](https://github.com/hyb1996/Auto.js) autojs 获得,并命名为Autox.js （autojs 修改版本），
-你现在看的是原4.1版本基础上的项目，
-后面我们将针对项目本身如何开发、运行的进行介绍，欢迎更多开发者参与这个项目维护升级。[hyb1996](https://github.com/hyb1996/Auto.js)采用的
+This project is derived from [hyb1996](https://github.com/hyb1996/Auto.js) Auto.js and is named AutoX.js (a modified version of Auto.js). What you are looking at is the project built on top of the original 4.1 release. Below we explain how the project itself is developed and run, and more developers are welcome to join in maintaining and upgrading it. [hyb1996](https://github.com/hyb1996/Auto.js) is licensed under the
 [Mozilla Public License Version 2.0](https://github.com/hyb1996/NoRootScriptDroid/blob/master/LICENSE.md)
-+**非商业性使用**，出于多种因素考虑， 本产品采用 [GPL-V2](https://opensource.org/licenses/GPL-2.0) 许可证，
-无论是其他贡献者，还是使用该产品，均需按照 MPL-2.0+非商业性使用 和 GPL-V2 的相关要求使用。
++**Non-Commercial Use**. For a number of reasons, this product is distributed under the [GPL-V2](https://opensource.org/licenses/GPL-2.0) license, so both contributors and users must comply with the requirements of MPL-2.0 + Non-Commercial Use and GPL-V2.
 
-关于两种协议：
+About the two licenses:
 
-* GPL-V2[https://opensource.org/licenses/GPL-2.0](https://opensource.org/license/gpl-2-0/)
+* GPL-V2 [https://opensource.org/licenses/GPL-2.0](https://opensource.org/license/gpl-2-0/)
 * MPL-2 (https://www.mozilla.org/MPL/2.0)
 
-### 现在的Autox.js：
+### AutoX.js today:
 
-* Autox.js文档： https://autox-doc.vercel.app/
-* 开源地址： https://github.com/aiselp/AutoX/
-* pc端开发[VS Code 插件](https://marketplace.visualstudio.com/items?itemName=aaroncheng.auto-js-vsce-fixed)
-* 官方论坛： [www.autoxjs.com](http://www.autoxjs.com)
-* autoxjs[更新日志](CHANGELOG.md)
+* AutoX.js documentation: https://autox-doc.vercel.app/
+* Source code: https://github.com/aiselp/AutoX/
+* PC-side development: [VS Code extension](https://marketplace.visualstudio.com/items?itemName=aaroncheng.auto-js-vsce-fixed)
+* Official forum: [www.autoxjs.com](http://www.autoxjs.com)
+* AutoX.js [changelog](CHANGELOG.md)
 
-### Autox.js下载地址：
-[releases](https://github.com/aiselp/AutoX/releases)  
-如果下载过慢可以右键复制 Release Assets 中APK文件的链接地址，粘贴到 [http://toolwa.com/github/](http://toolwa.com/github/) 等github加速网站下载
+### Download:
+[releases](https://github.com/aiselp/AutoX/releases)
+If the download is too slow, right-click and copy the link of the APK in Release Assets, then paste it into a GitHub mirror/accelerator such as [http://toolwa.com/github/](http://toolwa.com/github/).
 
-#### APK版本说明：
-目前仅提供一下两种版本
-- arm64-v8a: 64位ARM设备（主流旗舰机）
-- mini-arm64-v8a: 移除一些非必要资源版本，可以在使用时按需下载
+#### APK variants:
+Only the following two variants are currently provided:
+- arm64-v8a: for 64-bit ARM devices (mainstream flagship phones)
+- mini-arm64-v8a: with some non-essential resources removed; download them on demand while using the app
 
-### 特性
+### Features
 
-1. 由无障碍服务实现的简单易用的自动操作函数
-2. 悬浮窗录制和运行
-3. 更专业&强大的选择器API，提供对屏幕上的控件的寻找、遍历、获取信息、操作等。类似于Google的UI测试框架UiAutomator，您也可以把他当做移动版UI测试框架使用
-4. 采用JavaScript为脚本语言，并支持代码补全、变量重命名、代码格式化、查找替换等功能，可以作为一个JavaScript IDE使用
-5. 支持使用e4x编写界面，并可以将JavaScript打包为apk文件，您可以用它来开发小工具应用
-6. 支持使用Root权限以提供更强大的屏幕点击、滑动、录制功能和运行shell命令。录制录制可产生js文件或二进制文件，录制动作的回放比较流畅
-7. 提供截取屏幕、保存截图、图片找色、找图等函数
-8. 可作为Tasker插件使用，结合Tasker可胜任日常工作流
-9. 带有界面分析工具，类似Android Studio的LayoutInspector，可以分析界面层次和范围、获取界面上的控件信息的
+1. Simple, easy-to-use automation functions implemented through the Accessibility Service
+2. Floating window for recording and running scripts
+3. A more professional and powerful selector API for finding, traversing, inspecting and operating on-screen widgets, similar to Google's UiAutomator — you can also use it as a mobile UI testing framework
+4. JavaScript as the scripting language, with code completion, variable renaming, code formatting, find & replace and more, so it can be used as a JavaScript IDE
+5. Support for writing UI with E4X and packaging JavaScript into APK files, which lets you build small utility apps
+6. Root support for more powerful screen tapping, swiping and recording, plus running shell commands. Recordings can produce JS or binary files, and playback of recorded actions is fairly smooth
+7. Functions for capturing the screen, saving screenshots, color finding and image matching
+8. Usable as a Tasker plug-in, so it can handle daily workflows together with Tasker
+9. A built-in layout analysis tool, similar to Android Studio's Layout Inspector, for inspecting the UI hierarchy and bounds and reading widget information
 
-本软件与按键精灵等软件不同，主要区别是：
+Unlike macro recorders such as AnJian JingLing (Auto Clicker), the main differences are:
 
-1. Auto.js主要以自动化、工作流为目标，更多地是方便日常生活工作，例如启动游戏时自动屏蔽通知、一键与特定联系人微信视频（知乎上出现过该问题，老人难以进行复杂的操作和子女进行微信视频）等
-2. Auto.js兼容性更好。以坐标为基础的按键精灵、脚本精灵很容易出现分辨率问题，而以控件为基础的Auto.js则没有这个问题
-3. Auto.js执行大部分任务不需要root权限。只有需要精确坐标点击、滑动的相关函数才需要root权限
-4. Auto.js可以提供界面编写等功能，不仅仅是作为一个脚本软件而存在
+1. Auto.js focuses on automation and workflows, making everyday life and work easier — for example, muting notifications when a game starts, or starting a WeChat video call with a specific contact in one tap (a real problem discussed on Zhihu, where elderly people struggle with the complicated steps of a WeChat video call with their children)
+2. Auto.js is more compatible. Coordinate-based macro tools easily run into resolution problems, while widget-based Auto.js does not
+3. Auto.js does not need root for most tasks. Only functions that require precise coordinates for tapping and swiping need root
+4. Auto.js can also be used for building UIs, so it is more than just a scripting tool
 
-### v7版本新增功能特性🎉
+### What's new in v7 🎉
 
-- [x] 全新基于Material Design 3的ui界面
-- [x] 支持[Shizuku](https://shizuku.rikka.app/introduction/)功能并且能够运行嵌入式脚本，从而能够动态调试基于Shizuku的api而无需频繁构建调试apk来测试Shizuku功能
-- [x] 引入新的[nodejs引擎](https://github.com/caoccao/Javet?tab=readme-ov-file)，支持运行大量来自npm软件包，同时能够与java交互
-- [x] 迁移大量模块使用ts编写并添加类型申明，支持使用ts编写脚本并获得更全面的类型提示
-- [x] 全新基于Vue3和Jetpack Compose的ui框架，让你可以使用vue3编写数据响应式的Material Design 3界面
-- [ ] 新一代基于nodejs的api(简称v7 api)，提供大量非阻塞式的功能模块(完善中)
-- [x] 完善app打包功能和签名管理，支持打包nodejs引擎脚本，支持特殊权限请求配置
-- [x] [Rhino](https://github.com/mozilla/rhino/)升级至v1.8.0稳定版，支持更多es6+语法
+- [x] A brand new UI based on Material Design 3
+- [x] Support for [Shizuku](https://shizuku.rikka.app/introduction/) and embedded scripts, so Shizuku-based APIs can be debugged dynamically without repeatedly building a debug APK
+- [x] A new [Node.js engine](https://github.com/caoccao/Javet?tab=readme-ov-file) that supports a large number of npm packages and can interoperate with Java
+- [x] Many modules migrated to TypeScript with type declarations, so scripts can be written in TS with more complete type hints
+- [x] A brand new UI framework based on Vue 3 and Jetpack Compose, letting you write data-reactive Material Design 3 interfaces with Vue 3
+- [ ] A new generation of Node.js-based APIs (the v7 API), providing many non-blocking modules (in progress)
+- [x] Improved app packaging and signing management, with support for packaging Node.js engine scripts and configuring special permission requests
+- [x] [Rhino](https://github.com/mozilla/rhino/) upgraded to the stable 1.8.0 release, supporting more ES6+ syntax
 
-### 示例
-可在[这里](https://github.com/aiselp/AutoX/tree/setup-v7/app/src/main/assets/sample)查看一些示例，或者直接在应用内查看和运行。
+### Examples
+Some examples can be found [here](https://github.com/aiselp/AutoX/tree/setup-v7/app/src/main/assets/sample), or viewed and run directly inside the app.
 
+### Building
+Requirements: Java 17
 
-### 编译相关：
-环境要求:`java`版本为17
+Commands are run in the project root directory. On Windows PowerShell below 7.0, use `;` to separate commands instead of `&&`.
 
-命令说明：在项目根目录下运行命令，如果使用 Windows powerShell < 7.0，请使用包含 ";" 的命令
-
-**从7.0版本开始，构建之前，需要运行以下命令编译js模块，确保你已经安装了nodejs 20+**
+**Since 7.0, you need to build the JS modules before building the app. Make sure Node.js 20+ is installed.**
 
 ```shell
 ./gradlew autojs:buildJsModule
 ```
-仅需运行一次，若更改了模块代码需再次运行获得更新
-##### 构建文档
+This only needs to be run once; run it again after changing the module code to pick up the updates.
+
+##### Building the documentation
 
 ```shell
 ./gradlew app:buildDocs
 ````
-仅需运行一次，若更改了文档需再次运行获得更新
-##### 本地安装调试版本到设备：
+This only needs to be run once; run it again after changing the documentation to pick up the updates.
+
+##### Install a debug build to a device locally:
 ```shell
 ./gradlew app:buildDebugTemplateApp && ./gradlew app:assembleV7Debug && ./gradlew app:installV7Debug
-#或
+# or
 ./gradlew app:buildDebugTemplateApp ; ./gradlew app:assembleV7Debug ; ./gradlew app:installV7Debug
 ```
-生成的调试版本APK文件在 app/build/outputs/apk/v6/debug 下，使用默认签名
+The generated debug APK is under `app/build/outputs/apk/v6/debug` and uses the default signature.
 
-##### 本地编译发布版本：
+##### Build a release version locally:
 ```shell
 ./gradlew app:buildTemplateApp && ./gradlew app:assembleV7
-#或
+# or
 ./gradlew app:buildTemplateApp ; ./gradlew app:assembleV7
 ```
-生成的是未签名的APK文件，在 app/build/outputs/apk/v6/release 下，需要签名后才能安装
+The generated APK is unsigned and located under `app/build/outputs/apk/v6/release`; it must be signed before installation.
 
-##### 本地 Android Studio 运行调试版本到设备：
-先运行以下命令：
+##### Run a debug build to a device from Android Studio:
+First run:
 
 ```shell
 ./gradlew app:buildDebugTemplateApp
 ```
 
-再点击 Android Studio 运行按钮
+Then click the Run button in Android Studio.
 
-##### 本地 Android Studio 编译发布版本并签名：
-先运行以下命令：
+##### Build, sign and release from Android Studio:
+First run:
 
 ```shell
 ./gradlew app:buildTemplateApp
 ```
 
-再点击 Android Studio 菜单 "Build" -> "Generate Signed Bundle /APK..." -> 勾选"APK" -> "Next" -> 选择或新建证书 -> "Next" -> 选择"v7Release" -> "Finish"
-生成的APK文件，在 app/v7/release 下
+Then in Android Studio choose "Build" -> "Generate Signed Bundle / APK..." -> select "APK" -> "Next" -> choose or create a keystore -> "Next" -> select "v7Release" -> "Finish".
+The generated APK is under `app/v7/release`.
 
-### 测试
-目前为autojs模块中添加了部分脚本功能测试，如需运行测试请参考以下步骤
+### Testing
+Some script functionality tests have been added to the `autojs` module. To run them:
 
-1. 准备一台安卓设备并使用adb连接到电脑
-2. 使用最新版`Android Studio`完成一次模块构建`./gradlew autojs:assemble`
-3. 打开`autojs/src/androidTest`目录下的测试类
-4. 点击类名旁边的运行按钮开始测试
-5. 随后可能因设备而异需要在手机上点击允许测试apk安装
+1. Prepare an Android device and connect it to your computer with adb
+2. Build the module once with the latest Android Studio: `./gradlew autojs:assemble`
+3. Open a test class under `autojs/src/androidTest`
+4. Click the Run button next to the class name to start the test
+5. Depending on the device, you may need to allow the test APK installation on the phone

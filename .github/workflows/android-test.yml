@@ -4,7 +4,7 @@ on:
   pull_request:
     paths-ignore:
       - "README.md"
-      - "README_en.md"
+      - "README_zh.md"
 
 jobs:
   test:
