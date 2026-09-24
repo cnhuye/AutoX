@@ -431,8 +431,23 @@ private fun buildCompactNodes(node: NodeInfo, parentPackage: String?, isRoot: Bo
     if (node.scrollable) flags.append('s')
     if (node.longClickable) flags.append('l')
     if (!node.enabled) flags.append('d')
+    // 可勾选 / 已选中标记，方便模型一眼看出 toggle / radio / checkbox 的交互能力
+    if (node.checkable) flags.append('k')
+    if (node.selected) flags.append('x')
     if (flags.isNotEmpty() && (hasSignal || isRoot)) {
         data["a"] = flags.toString()
+    }
+
+    // 状态作为一等字段输出，模型无需解析 `a` 标记。
+    // checked 只在 checkable 时输出，selected 只在为 true 时输出，避免给整棵树刷上无意义的 false。
+    if (node.checkable) {
+        data["checked"] = node.checked
+    }
+    if (node.selected) {
+        data["selected"] = true
+    }
+    if (!node.enabled) {
+        data["enabled"] = false
     }
 
     val nextParent = pkg ?: parentPackage
@@ -452,6 +467,10 @@ private fun buildCompactNodes(node: NodeInfo, parentPackage: String?, isRoot: Bo
 
 private fun hasNodeSignal(node: NodeInfo): Boolean {
     if (node.clickable || node.focusable || node.scrollable || node.longClickable) {
+        return true
+    }
+    // 没有 text/id 的纯 RadioButton / CheckBox 也要保留，否则选中态会被整棵树剪掉
+    if (node.checkable || node.selected) {
         return true
     }
     if (!node.text?.toString().isNullOrBlank()) {
