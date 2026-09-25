@@ -26,3 +26,9 @@ autojs/.cxx/ndk_locator_record_68547592_key.json
 *.aab
 output-metadata.json
 /mcp/build/
+
+# 签名相关 - 不要提交
+/keystore
+/keystore.properties
+*.jks
+*.keystore

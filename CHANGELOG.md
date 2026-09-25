@@ -2,6 +2,35 @@
 autoxjs 整个项目的一些更新日志,双版本号为稳定版（内容以修复的bug为主），单版本号为激进版本、发布新内容。
 
 ## [Unreleased](https://github.com/kkevsekk1/AutoX/compare/7.0.5...HEAD) 未发布
+## [7.3.0] - 2026-9-24
+* 新增 MCP 服务端支持（Model Context Protocol Server）
+  - 提供 JSON-RPC 协议接口，可被 Claude Desktop 等 MCP 客户端连接
+  - 在 App 内可配置 MCP 服务端口 / 启用状态
+  - 暴露 `getScreenInfo` / `tap` / `swipe` / `inputText` 等自动化工具，详见 `docs/MCP_USAGE.md`
+
+* feat(mcp): 节点信息输出选态与禁用状态
+  - `getScreenInfo` 结果中补充 `checked` / `selected` / `enabled` 字段
+  - 压缩标记 `a` 增加 `k(checkable)` / `x(selected)`
+  - `hasNodeSignal` 保留无 text/id 的 RadioButton / CheckBox，避免选态被剪枝
+
+* 新增多图片模板匹配 API：`images.matchMultiTemplates()`
+  - 可传入模板图片数组，单次匹配所有模板并返回多个结果
+  - 旧的 `images.matchTemplate` 内部也改为调用新接口
+
+* 读取 project.json 并回显到界面，构建页面可展示项目元信息
+
+* 修复高版本 Android 选择图标失败
+
+* 修复脚本引擎异常（LoopBasedJavaScriptEngine / RhinoJavaScriptEngine）
+
+* fix: 跳过解压 APK 时名称为空的 zip 条目，避免 EISDIR 错误中断构建
+
+* fix: 修复 `libppocrv5ncnn.so` 找不到的错误
+
+* 解决多脚本环境下，脚本停止影响共享截图权限的问题
+
+* UI 类型导入优化（dialogs / floaty / ui_jsx 等）
+
 ## [7.2.3] - 2026-7-27
 * 修复无障碍权限，app进程无法访问script进程的无障碍权限实例导致的bug
 

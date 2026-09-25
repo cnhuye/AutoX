@@ -1,6 +1,7 @@
 import com.android.build.gradle.internal.tasks.factory.dependsOn
 import java.io.FileNotFoundException
 import java.util.Base64
+import java.util.Properties
 
 plugins {
     id("com.android.application")
@@ -61,8 +62,17 @@ android {
             isUniversalApk = false
         }
     }
-    val signing =
-        if (System.getenv("CI") == "true" && !System.getenv("KEYSTORE_BASE64").isNullOrEmpty()) {
+    // 签名配置优先级：
+    //   1. CI 环境变量（GitHub Actions 用）
+    //   2. keystore.properties 文件（本地构建用，不要提交到 git）
+    val keystoreProps = Properties().apply {
+        val propsFile = rootProject.file("keystore.properties")
+        if (propsFile.exists()) {
+            load(propsFile.inputStream())
+        }
+    }
+    val signing = when {
+        System.getenv("CI") == "true" && !System.getenv("KEYSTORE_BASE64").isNullOrEmpty() -> {
             val file = File.createTempFile("key", "jks")
             val bytes = Base64.getDecoder().decode(System.getenv("KEYSTORE_BASE64"))
             file.writeBytes(bytes)
@@ -75,7 +85,20 @@ android {
                 keyAlias = System.getenv("KEY_ALIAS")
                 keyPassword = System.getenv("KEY_PASSWORD")
             }
-        } else null
+        }
+        keystoreProps.isNotEmpty() -> {
+            signingConfigs.create("release") {
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+        else -> null
+    }
 
     buildTypes {
         named("debug") {
