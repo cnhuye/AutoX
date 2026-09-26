@@ -32,3 +32,8 @@ output-metadata.json
 /keystore.properties
 *.jks
 *.keystore
+
+# 本地发布工具与草稿
+/release.sh
+/0.7
+/docs/

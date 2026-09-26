@@ -1,10 +1,13 @@
 package org.autojs.autoxjs.mcp.tools
 
+import android.app.Instrumentation
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Path
 import android.os.Build
 import android.os.SystemClock
+import android.accessibilityservice.GestureDescription
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.stardust.autojs.core.accessibility.UiSelector
@@ -57,7 +60,7 @@ data class FindElementsRequest(
 data class ScreenshotRequest(val asBase64: Boolean? = false)
 data class GetRecentScreenshotRequest(val asBase64: Boolean? = false)
 data class OcrRequest(val source: String? = null, val path: String? = null, val language: String? = "zh")
-data class AppControlRequest(val action: String, val packageName: String)
+data class AppControlRequest(val action: String, val packageName: String? = null, val query: String? = null)
 
 class TapTool(private val ctx: McpToolContext) : McpTool {
     override suspend fun handle(params: JsonObject?): McpResponse {
@@ -349,21 +352,44 @@ class OcrTool(private val ctx: McpToolContext) : McpTool {
 class AppControlTool(private val ctx: McpToolContext) : McpTool {
     override suspend fun handle(params: JsonObject?): McpResponse {
         val req = parse(params, AppControlRequest::class.java)
-            ?: return McpResponse.error("BadRequest", "action/packageName required")
+            ?: return McpResponse.error("BadRequest", "action required")
         val runtime = ctx.runtimeProvider.getRuntime()
         return when (req.action.lowercase()) {
             "launch", "bring_to_front" -> {
-                val ok = runtime.app.launchPackage(req.packageName)
+                val pkg = req.packageName
+                    ?: return McpResponse.error("BadRequest", "packageName required for action '${req.action}'")
+                val ok = runtime.app.launchPackage(pkg)
                 if (ok) McpResponse.ok(mapOf("ok" to true)) else McpResponse.error("Failed", "launch failed")
             }
             "force_stop" -> {
-                val result = runtime.shell.exec("am force-stop ${req.packageName}", false)
+                val pkg = req.packageName
+                    ?: return McpResponse.error("BadRequest", "packageName required for force_stop")
+                val result = runtime.shell.exec("am force-stop $pkg", false)
                 if (result.code == 0) McpResponse.ok(mapOf("ok" to true)) else McpResponse.error(
                     "Failed",
                     "force_stop failed: ${result.error}"
                 )
             }
-            else -> McpResponse.error("BadRequest", "unsupported action")
+            "search_and_launch" -> {
+                val query = req.query?.trim()?.lowercase(java.util.Locale.getDefault())
+                    ?: req.packageName?.trim()?.lowercase(java.util.Locale.getDefault())
+                    ?: return McpResponse.error("BadRequest", "query required for search_and_launch")
+                val pm = ctx.appContext.packageManager
+                val apps = pm.getInstalledApplications(0)
+                val matched = apps.firstOrNull { app ->
+                    if ((app.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0) return@firstOrNull false
+                    val label = app.loadLabel(pm)?.toString()?.lowercase(java.util.Locale.getDefault()) ?: ""
+                    val pkgLower = app.packageName.lowercase(java.util.Locale.getDefault())
+                    label.contains(query) || pkgLower.contains(query)
+                }
+                if (matched == null) {
+                    return McpResponse.error("NotFound", "no app matching '$query'")
+                }
+                val ok = runtime.app.launchPackage(matched.packageName)
+                if (ok) McpResponse.ok(mapOf("ok" to true, "packageName" to matched.packageName, "label" to matched.loadLabel(pm)?.toString()))
+                else McpResponse.error("Failed", "launch failed for ${matched.packageName}")
+            }
+            else -> McpResponse.error("BadRequest", "unsupported action: ${req.action}")
         }
     }
 }
@@ -377,7 +403,14 @@ class GetUiTreeTool(private val ctx: McpToolContext) : McpTool {
                 val nodes = buildCompactNodes(root, null, true)
                 nodes.firstOrNull()
             } ?: return McpResponse.error("Failed", "capture failed")
-            McpResponse.ok(data)
+            // §三：在根节点注入 activity 字段
+            val rootMap = data.toMutableMap()
+            val runtime = ctx.runtimeProvider.getRuntime()
+            val activity = runtime.info.latestActivity.takeIf { it.isNotBlank() }
+            if (activity != null) {
+                rootMap["activity"] = activity
+            }
+            McpResponse.ok(rootMap)
         } catch (e: Exception) {
             McpResponse.error("Failed", e.message ?: "capture failed")
         }
@@ -559,3 +592,86 @@ private fun scaleBitmapIfNeeded(source: Bitmap, maxDimension: Int): Bitmap? {
 
 private const val BASE64_MAX_DIMENSION = 720
 private const val BASE64_JPEG_QUALITY = 70
+
+// ─── §四：gesture 工具 ────────────────────────────────────────────────────────
+
+data class GestureStrokePoint(val x: Int, val y: Int, val t: Int)
+data class GestureStroke(val points: List<GestureStrokePoint>)
+data class GestureRequest(val duration: Int? = 300, val strokes: List<GestureStroke>)
+
+class GestureTool(private val ctx: McpToolContext) : McpTool {
+    override suspend fun handle(params: JsonObject?): McpResponse {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            return McpResponse.error("Unsupported", "gesture requires Android 7.0+")
+        }
+        val req = parse(params, GestureRequest::class.java)
+            ?: return McpResponse.error("BadRequest", "strokes required")
+        if (req.strokes.isEmpty()) {
+            return McpResponse.error("BadRequest", "strokes must not be empty")
+        }
+        val duration = (req.duration ?: 300).toLong().coerceAtLeast(1)
+        return try {
+            val runtime = ctx.runtimeProvider.getRuntime()
+            val strokes = req.strokes.mapNotNull { stroke ->
+                if (stroke.points.isEmpty()) return@mapNotNull null
+                val sorted = stroke.points.sortedBy { it.t }
+                val path = Path()
+                path.moveTo(sorted.first().x.toFloat(), sorted.first().y.toFloat())
+                for (i in 1 until sorted.size) {
+                    path.lineTo(sorted[i].x.toFloat(), sorted[i].y.toFloat())
+                }
+                GestureDescription.StrokeDescription(path, 0L, duration)
+            }
+            if (strokes.isEmpty()) {
+                return McpResponse.error("BadRequest", "all strokes are empty")
+            }
+            @Suppress("UNCHECKED_CAST")
+            val ok = runtime.automator.gestures(strokes.toTypedArray() as Any)
+            if (ok) McpResponse.ok(mapOf("ok" to true)) else McpResponse.error("Failed", "gesture cancelled or failed")
+        } catch (e: Exception) {
+            McpResponse.error("Failed", e.message ?: "gesture failed")
+        }
+    }
+}
+
+// ─── §六：key_event 工具 ──────────────────────────────────────────────────────
+
+data class KeyEventRequest(val code: Int, val action: String? = "PRESS")
+
+class KeyEventTool : McpTool {
+    override suspend fun handle(params: JsonObject?): McpResponse {
+        val req = parse(params, KeyEventRequest::class.java)
+            ?: return McpResponse.error("BadRequest", "code required")
+        return try {
+            val inst = Instrumentation()
+            val actionStr = req.action?.uppercase() ?: "PRESS"
+            when (actionStr) {
+                "ACTION_DOWN", "DOWN" -> {
+                    inst.sendKeyDownUpSync(req.code)
+                }
+                "ACTION_UP", "UP" -> {
+                    inst.sendKeyDownUpSync(req.code)
+                }
+                else -> {
+                    // PRESS = DOWN + UP
+                    inst.sendKeyDownUpSync(req.code)
+                }
+            }
+            McpResponse.ok(mapOf("ok" to true))
+        } catch (e: SecurityException) {
+            // Instrumentation 不可用时尝试通过 shell 兜底
+            try {
+                val runtime = com.stardust.autojs.AutoJs.instance.createRuntimeBuilder().build().apply { init() }
+                val result = runtime.shell.exec("input keyevent ${req.code}", false)
+                runtime.onExit()
+                if (result.code == 0) McpResponse.ok(mapOf("ok" to true, "via" to "shell"))
+                else McpResponse.error("Failed", "key_event shell fallback failed: ${result.error}")
+            } catch (e2: Exception) {
+                McpResponse.error("Failed", "key_event failed: ${e.message}; shell fallback: ${e2.message}")
+            }
+        } catch (e: Exception) {
+            McpResponse.error("Failed", e.message ?: "key_event failed")
+        }
+    }
+}
+

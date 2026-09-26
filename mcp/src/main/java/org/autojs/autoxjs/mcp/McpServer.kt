@@ -3,7 +3,6 @@ package org.autojs.autoxjs.mcp
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.net.Uri
-import android.util.Log
 import com.google.gson.Gson
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -45,30 +44,70 @@ class McpServer(
 
     fun start(config: McpConfig) {
         stop()
-        if (!config.enabled) return
+        if (!config.enabled) {
+            McpLog.i(McpLog.TAG_SERVER, "start skipped: config.enabled=false")
+            return
+        }
+        McpLog.i(
+            McpLog.TAG_SERVER,
+            "starting engine host=${config.host} port=${config.port} " +
+                "token=${McpLog.secret(config.token)} allowNetwork=${config.allowNetwork} " +
+                "allowBase64=${config.allowBase64}"
+        )
         engine = embeddedServer(Netty, port = config.port, host = config.host) {
             install(WebSockets)
             routing {
                 post("/mcp") {
-                    if (!isOriginAllowed(config, call.request.headers["Origin"])) {
-                        call.respond(
-                            HttpStatusCode.Forbidden
+                    val started = System.nanoTime()
+                    val origin = call.request.headers["Origin"]
+                    val tokenHeader = call.request.headers["X-Token"]
+                    val remoteHost = call.request.local.remoteHost
+                    McpLog.i(
+                        McpLog.TAG_HTTP,
+                        "POST /mcp from=$remoteHost origin=${origin ?: "<none>"} " +
+                            "xToken=${if (tokenHeader.isNullOrBlank()) "<missing>" else "<set,len=${tokenHeader.length}>"}"
+                    )
+
+                    if (!isOriginAllowed(config, origin)) {
+                        McpLog.w(
+                            McpLog.TAG_HTTP,
+                            "reject origin=$origin status=403 remote=$remoteHost"
                         )
+                        call.respond(HttpStatusCode.Forbidden)
                         return@post
                     }
 
-                    if (!authorize(config, call.request.headers["X-Token"])) {
+                    if (!authorize(config, tokenHeader)) {
+                        McpLog.w(
+                            McpLog.TAG_HTTP,
+                            "reject unauthorized remote=$remoteHost status=401"
+                        )
                         call.respond(HttpStatusCode.Unauthorized)
                         return@post
                     }
 
                     val body = call.receiveText()
+                    McpLog.d(
+                        McpLog.TAG_HTTP,
+                        "body received len=${body.length} preview=${McpLog.truncate(body)}"
+                    )
                     val response = jsonRpcHandler.handleText(body)
+                    val elapsedMs = (System.nanoTime() - started) / 1_000_000
                     if (response.body == null) {
+                        McpLog.i(
+                            McpLog.TAG_HTTP,
+                            "respond status=${response.status.value} elapsedMs=$elapsedMs body=null"
+                        )
                         call.respond(response.status)
                     } else {
+                        val respJson = gson.toJson(response.body)
+                        McpLog.i(
+                            McpLog.TAG_HTTP,
+                            "respond status=${response.status.value} elapsedMs=$elapsedMs " +
+                                "bodyLen=${respJson.length} preview=${McpLog.truncate(respJson, 192)}"
+                        )
                         call.respondText(
-                            gson.toJson(response.body),
+                            respJson,
                             ContentType.Application.Json,
                             response.status
                         )
@@ -76,19 +115,22 @@ class McpServer(
                 }
 
                 get("/mcp") {
+                    McpLog.i(McpLog.TAG_HTTP, "GET /mcp -> 405 Method Not Allowed")
                     call.respond(HttpStatusCode.MethodNotAllowed)
                 }
 
             }
         }.also { engine -> engine.start(wait = false) }
-        Log.i(TAG, "MCP server started on ${config.host}:${config.port}")
+        McpLog.i(McpLog.TAG_SERVER, "MCP server started on ${config.host}:${config.port}")
     }
 
     fun stop() {
+        McpLog.i(McpLog.TAG_SERVER, "stop requested")
         try {
             engine?.stop(1000, 2000)
+            McpLog.i(McpLog.TAG_SERVER, "engine stopped cleanly")
         } catch (e: Exception) {
-            Log.e(TAG, "Error stopping server", e)
+            McpLog.e(McpLog.TAG_SERVER, "Error stopping server", e)
         } finally {
             engine = null
         }
@@ -133,7 +175,7 @@ class McpServer(
                 }
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to resolve local addresses", e)
+            McpLog.w(McpLog.TAG_SERVER, "Failed to resolve local addresses", e)
         }
         return hosts
     }
@@ -155,6 +197,7 @@ class McpServer(
     }
 
     companion object {
-        private const val TAG = "McpServer"
+        // Kept for backward compatibility; new code should use McpLog.TAG_*.
+        private const val TAG = McpLog.TAG_SERVER
     }
 }

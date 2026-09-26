@@ -58,4 +58,16 @@ object ToolSchemas {
             }
         }
     }
+
+    fun arraySchema(description: String? = null, items: JsonObject? = null): JsonObject {
+        return JsonObject().apply {
+            addProperty("type", "array")
+            if (!description.isNullOrBlank()) {
+                addProperty("description", description)
+            }
+            if (items != null) {
+                add("items", items)
+            }
+        }
+    }
 }

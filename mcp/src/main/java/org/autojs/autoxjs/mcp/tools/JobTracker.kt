@@ -1,5 +1,6 @@
 package org.autojs.autoxjs.mcp.tools
 
+import org.autojs.autoxjs.mcp.McpLog
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -22,13 +23,21 @@ class JobTracker {
         val id = idGen.getAndIncrement()
         val status = JobStatus(id, name, JobStatus.Status.SUBMITTED)
         jobs[id] = status
+        McpLog.i(McpLog.TAG_JOB, "new jobId=$id name=$name status=SUBMITTED totalActive=${jobs.size}")
         return status
     }
 
     fun update(id: Int, status: JobStatus.Status, message: String? = null) {
         val existing = jobs[id]
         if (existing != null) {
+            val prev = existing.status
             jobs[id] = existing.copy(status = status, message = message)
+            McpLog.i(
+                McpLog.TAG_JOB,
+                "update jobId=$id $prev -> $status message=${message ?: "<none>"}"
+            )
+        } else {
+            McpLog.w(McpLog.TAG_JOB, "update on unknown jobId=$id status=$status (ignored)")
         }
     }
 

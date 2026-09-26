@@ -1,12 +1,13 @@
 package org.autojs.autoxjs.mcp
 
 import android.content.Context
-import android.util.Log
 import org.autojs.autoxjs.mcp.tool.ToolDefinition
 import org.autojs.autoxjs.mcp.tool.ToolRegistry
 import org.autojs.autoxjs.mcp.tool.ToolSchemas
 import org.autojs.autoxjs.mcp.tools.AppControlTool
 import org.autojs.autoxjs.mcp.tools.CancelJobTool
+import org.autojs.autoxjs.mcp.tools.GestureTool
+import org.autojs.autoxjs.mcp.tools.KeyEventTool
 import org.autojs.autoxjs.mcp.tools.DeleteScriptTool
 import org.autojs.autoxjs.mcp.tools.DeviceInfoTool
 import org.autojs.autoxjs.mcp.tools.FindElementTool
@@ -58,21 +59,29 @@ class McpService(private val context: Context) {
 
     fun start(config: McpConfig) {
         currentConfig = config
+        McpLog.i(
+            McpLog.TAG_SERVICE,
+            "start requested enabled=${config.enabled} host=${config.host} port=${config.port} " +
+                "token=${McpLog.secret(config.token)} allowNetwork=${config.allowNetwork} allowBase64=${config.allowBase64} " +
+                "registeredTools=${registry.names().size}"
+        )
         if (!config.enabled) {
             stop()
             return
         }
         if (server == null) {
             server = McpServer(context.applicationContext, registry)
+            McpLog.i(McpLog.TAG_SERVICE, "McpServer instance created")
         }
         server?.start(config)
-        Log.i(TAG, "MCP service started")
+        McpLog.i(McpLog.TAG_SERVICE, "MCP service started")
     }
 
     fun stop() {
+        McpLog.i(McpLog.TAG_SERVICE, "stop requested")
         server?.stop()
         runtimeProvider.close()
-        Log.i(TAG, "MCP service stopped")
+        McpLog.i(McpLog.TAG_SERVICE, "MCP service stopped")
     }
 
     private fun registerDefaultTools() {
@@ -399,13 +408,14 @@ class McpService(private val context: Context) {
                 ToolDefinition(
                     name = "app_control",
                     title = "App Control",
-                    description = "Launch or force-stop an app.",
+                    description = "Launch, bring to front, force-stop an app, or search and launch by label keyword.",
                     inputSchema = ToolSchemas.objectSchema(
                         mapOf(
-                            "action" to ToolSchemas.stringSchema("launch | bring_to_front | force_stop"),
-                            "packageName" to ToolSchemas.stringSchema("Target package name.")
+                            "action" to ToolSchemas.stringSchema("launch | bring_to_front | force_stop | search_and_launch"),
+                            "packageName" to ToolSchemas.stringSchema("Target package name (required for launch/force_stop)."),
+                            "query" to ToolSchemas.stringSchema("Label keyword for search_and_launch (e.g. '微信').")
                         ),
-                        required = listOf("action", "packageName")
+                        required = listOf("action")
                     )
                 ),
                 AppControlTool(toolContext)
@@ -448,10 +458,58 @@ class McpService(private val context: Context) {
                 ),
                 GetRecentScreenshotTool(toolContext)
             )
+            register(
+                ToolDefinition(
+                    name = "gesture",
+                    title = "Gesture",
+                    description = "Run a multi-finger gesture (pinch / spread / swipe). Each stroke is one finger's path.",
+                    inputSchema = ToolSchemas.objectSchema(
+                        mapOf(
+                            "duration" to ToolSchemas.intSchema("Gesture duration in ms (default 300)."),
+                            "strokes" to ToolSchemas.arraySchema(
+                                description = "List of strokes. Each stroke has a 'points' list of {x, y, t} objects.",
+                                items = ToolSchemas.objectSchema(
+                                    mapOf(
+                                        "points" to ToolSchemas.arraySchema(
+                                            description = "Ordered list of {x, y, t} points for this finger.",
+                                            items = ToolSchemas.objectSchema(
+                                                mapOf(
+                                                    "x" to ToolSchemas.intSchema("X coordinate."),
+                                                    "y" to ToolSchemas.intSchema("Y coordinate."),
+                                                    "t" to ToolSchemas.intSchema("Time offset in ms.")
+                                                ),
+                                                required = listOf("x", "y", "t")
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+                        required = listOf("strokes")
+                    )
+                ),
+                GestureTool(toolContext)
+            )
+            register(
+                ToolDefinition(
+                    name = "key_event",
+                    title = "Key Event",
+                    description = "Send an Android key event directly (e.g. code=3 for Home, 4 for Back, 187 for Recents).",
+                    inputSchema = ToolSchemas.objectSchema(
+                        mapOf(
+                            "code" to ToolSchemas.intSchema("Android KeyEvent code (e.g. 3=Home, 4=Back, 187=Recents)."),
+                            "action" to ToolSchemas.stringSchema("ACTION_DOWN | ACTION_UP | PRESS (default PRESS).")
+                        ),
+                        required = listOf("code")
+                    )
+                ),
+                KeyEventTool()
+            )
         }
     }
 
     companion object {
-        private const val TAG = "McpService"
+        // Kept for backward compatibility; new code should use McpLog.TAG_SERVICE.
+        private const val TAG = McpLog.TAG_SERVICE
     }
 }

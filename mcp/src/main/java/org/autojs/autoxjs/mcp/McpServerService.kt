@@ -21,6 +21,7 @@ class McpServerService : Service(), SharedPreferences.OnSharedPreferenceChangeLi
 
     override fun onCreate() {
         super.onCreate()
+        McpLog.i(McpLog.TAG_SERVER_SVC, "onCreate pkg=$packageName")
         startForegroundIfNeeded()
         @Suppress("DEPRECATION")
         prefs = getSharedPreferences(
@@ -33,12 +34,14 @@ class McpServerService : Service(), SharedPreferences.OnSharedPreferenceChangeLi
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        McpLog.i(McpLog.TAG_SERVER_SVC, "onStartCommand flags=$flags startId=$startId intent=${intent?.toString() ?: "<null>"}")
         startForegroundIfNeeded()
         applyConfig()
         return START_STICKY
     }
 
     override fun onDestroy() {
+        McpLog.i(McpLog.TAG_SERVER_SVC, "onDestroy")
         prefs.unregisterOnSharedPreferenceChangeListener(this)
         mcpService.stop()
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -50,12 +53,18 @@ class McpServerService : Service(), SharedPreferences.OnSharedPreferenceChangeLi
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         if (key in MCP_KEYS) {
+            McpLog.i(McpLog.TAG_SERVER_SVC, "prefs changed key=$key -> reapply config")
             applyConfig()
         }
     }
 
     private fun applyConfig() {
         val config = McpPrefs.load(this)
+        McpLog.i(
+            McpLog.TAG_SERVER_SVC,
+            "applyConfig enabled=${config.enabled} host=${config.host} port=${config.port} " +
+                "token=${McpLog.secret(config.token)} allowNetwork=${config.allowNetwork} allowBase64=${config.allowBase64}"
+        )
         if (config.enabled) {
             startForegroundIfNeeded()
             mcpService.start(config)
