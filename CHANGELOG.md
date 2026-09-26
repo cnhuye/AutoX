@@ -2,6 +2,15 @@
 autoxjs 整个项目的一些更新日志,双版本号为稳定版（内容以修复的bug为主），单版本号为激进版本、发布新内容。
 
 ## [Unreleased](https://github.com/kkevsekk1/AutoX/compare/7.0.5...HEAD) 未发布
+
+# 自动生成的 CHANGELOG 草稿（自 v7.3.0 以来的提交）
+# 删除你不想保留的行,改完保存退出(>:wq 或 Ctrl-D)即可继续
+#
+## [7.3.1] - 2026-9-26
+
+* feat(mcp): 增强 MCP 服务端日志、错误处理与工具能力
+
+
 ## [7.3.0] - 2026-9-24
 * 新增 MCP 服务端支持（Model Context Protocol Server）
   - 提供 JSON-RPC 协议接口，可被 Claude Desktop 等 MCP 客户端连接
